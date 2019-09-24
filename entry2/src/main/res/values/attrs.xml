@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="BottomEntry">
+        <!-- 是否可以拍照 -->
+        <attr name="takePhoto" format="boolean"/>
+        <!-- 是否可以选择图片  -->
+        <attr name="pickImage" format="boolean"/>
+        <!-- 选择图片的最大数量 -->
+        <attr name="maxPhotoNum" format="integer"/>
+        <!-- 是否可以录音 -->
+        <attr name="recordVoice" format="boolean"/>
+
+
+
+        <!-- 面板颜色 -->
+        <attr name="themeColor" format="reference"/>
+
+    </declare-styleable>
+</resources>

@@ -1,0 +1,28 @@
+<resources>
+    <dimen name="entry_menu_size">34dp</dimen>
+    <dimen name="entry_menu_padding">2dp</dimen>
+    <dimen name="entry_menu_margin_start">3dp</dimen>
+    <dimen name="entry_menu_dialog_padding">10dp</dimen>
+    <dimen name="entry_menu_dialog_height">300dp</dimen>
+
+    <dimen name="entry_layout_padding">3dp</dimen>
+
+
+    <dimen name="sheet_photo_title_height">40dp</dimen>
+    <dimen name="sheet_photo_main_title_textSize">12sp</dimen>
+    <dimen name="sheet_photo_side_title_textSize">10sp</dimen>
+
+    <dimen name="tab_padding_top">3dp</dimen>
+    <dimen name="tab_padding_bottom">3dp</dimen>
+    <dimen name="icon_size">30dp</dimen>
+    <dimen name="icon_padding_vertical">2dp</dimen>
+    <dimen name="icon_margin_start">15dp</dimen>
+    <dimen name="editText_min_height">34dp</dimen>
+    <dimen name="editText_max_height">70dp</dimen>
+    <dimen name="editText_margin_end">32dp</dimen>
+    <dimen name="send_padding_vertical">2dp</dimen>
+
+    <dimen name="send_width">40dp</dimen>
+    <dimen name="mic_dialog_close">50dp</dimen>
+    <dimen name="layout_padding_horizontal">15dp</dimen>
+</resources>
