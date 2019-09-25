@@ -46,8 +46,11 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
     private EntryMenu bottom_entry_emoji;
     private LinearLayout bottom_entry_send;
     public LinearLayout bottom_entry_dashboard;
+<<<<<<< HEAD
     public LinearLayout sheet_photo_pull_bar;
     public LinearLayout dashboard_view_wrap;
+=======
+>>>>>>> d5f758fd1968ddb111b61aa756184e63879827c7
 
     //自定义的部分
     public boolean takePhoto;
@@ -94,6 +97,7 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
             }
 
         });
+
     }
 
     private void initBaseComponent(){
@@ -125,7 +129,11 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
             findActivity(context).getWindow().getDecorView().getWindowVisibleDisplayFrame(rect);
             //获取屏幕的高度
             screen_height = findActivity(context).getWindow().getDecorView().getRootView().getHeight();
+<<<<<<< HEAD
             screen_width = findActivity(context).getWindow().getDecorView().getRootView().getWidth();
+=======
+
+>>>>>>> d5f758fd1968ddb111b61aa756184e63879827c7
             int virtualHeight = VirtualkeyUtils.getNavigationBarHeight(findActivity(context));
             if(screen_height - rect.bottom - virtualHeight != 0){
                 keyBoardHeight = screen_height - rect.bottom - virtualHeight;
@@ -149,8 +157,12 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
             entryMenus.forEach(item -> bottom_entry_menus_scrollView_layout.addView(item));
         }
     }
+    @SuppressLint("ClickableViewAccessibility")
     private void setEntryMenusListener(){
+        rootView.setOnTouchListener(((view, motionEvent) -> bottom_entry_dashboard.dispatchTouchEvent(motionEvent)));
+
         if(null != entryMenus){
+
             entryMenus.forEach(item -> item.setOnEntryMenuClickListener(this));
         }
     }

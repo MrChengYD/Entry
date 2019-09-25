@@ -113,7 +113,11 @@ public class BottomEntry extends BottomEntryBase{
                     case MotionEvent.ACTION_MOVE : {
                         //监听点击坐标
                         float position_y = motionEvent.getY();
+<<<<<<< HEAD
                         pullDashBoard(picImageBottomSheetView , (int) position_y);
+=======
+                        pullDashBoard((int) position_y);
+>>>>>>> d5f758fd1968ddb111b61aa756184e63879827c7
 
                         break;
                     }
@@ -158,12 +162,16 @@ public class BottomEntry extends BottomEntryBase{
     }
 
     private FrameLayout.LayoutParams dashBoardLayoutParam ;
+<<<<<<< HEAD
     private LinearLayout.LayoutParams sheet_photo_title_layoutParam;
+=======
+>>>>>>> d5f758fd1968ddb111b61aa756184e63879827c7
     /** 拉伸 面板
      *
      * 面板拉伸后， 超过了entryView的范围，导致当中的view无法设置onTouch（onClick）监听
      *
      * **/
+<<<<<<< HEAD
     // sheet_photo中的各种组件
     private LinearLayout sheet_photo_title_layout;
     private ImageView sheet_photo_close;
@@ -199,6 +207,26 @@ public class BottomEntry extends BottomEntryBase{
             sheet_photo_title_layout.setLayoutParams(sheet_photo_title_layoutParam);
 
 
+=======
+    protected void pullDashBoard(int position_y){
+
+        // 拉伸 bottom_entry_dashboard
+        if(null == dashBoardLayoutParam){
+            dashBoardLayoutParam = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
+        }
+        Log.i("aaa" , "输出 dashBoard 的高度 : " + dashBoardLayoutParam.height);
+        //Log.i("aaa" , "输出 bottom_entry_menu_board 的高度 : " + bottom_entry_menu_board.getHeight());//141
+        Log.i("aaa" , "输出 screen_height 的高度 : " + screen_height);
+        if(dashBoardLayoutParam.height - position_y < keyBoardHeight || dashBoardLayoutParam.height < keyBoardHeight){
+            Log.i("aaa" , "1");
+            dashBoardLayoutParam.height = keyBoardHeight;
+        }else if(dashBoardLayoutParam.height - position_y >= screen_height - 200 || dashBoardLayoutParam.height >= screen_height - 200){
+            Log.i("aaa" , "2");
+            dashBoardLayoutParam.height = screen_height - 200;
+        }else{
+            Log.i("aaa" , "3");
+            dashBoardLayoutParam.height = dashBoardLayoutParam.height  - position_y ;
+>>>>>>> d5f758fd1968ddb111b61aa756184e63879827c7
         }
         dashBoardLayoutParam.topMargin = keyBoardHeight + bottom_entry_menu_board.getHeight() - dashBoardLayoutParam.height;
         bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
