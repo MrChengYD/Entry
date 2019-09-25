@@ -11,8 +11,6 @@
         android:layout_width="match_parent"
         android:layout_height="@dimen/entry_menu_dialog_height"
         android:layout_marginTop="-300dp"
-        android:padding="@dimen/entry_menu_dialog_padding"
-        android:background="@color/google_green"
         android:clipChildren="false"
         android:visibility="gone">
     </FrameLayout>
@@ -116,14 +114,10 @@
                 android:gravity="center"/>
         </LinearLayout>
     </LinearLayout>
-    <View
-        android:layout_width="1dp"
-        android:layout_height="20dp"
-        android:layout_marginTop="45dp"/>
     <include
+        android:id="@+id/bottom_entry_dashboard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:clipChildren="false"
         layout="@layout/sheet_bottom_entry_dashboard"
         android:layout_marginTop="40dp"/>
 

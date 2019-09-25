@@ -1,6 +1,5 @@
 package inc.cyd.entry2;
 
-import android.accounts.AbstractAccountAuthenticator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -11,7 +10,9 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,11 +21,7 @@ import java.util.List;
 import inc.cyd.entry2.entity.EntryMenu;
 
 public class BottomEntry extends BottomEntryBase{
-    private boolean takePhoto;
-    private boolean pickImage;
-    private int maxPhotoNum;
-    private boolean recordVoice;
-    private Drawable themeColor;
+
     public BottomEntry(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
@@ -75,32 +72,52 @@ public class BottomEntry extends BottomEntryBase{
         //添加menu
         //主按钮
         EntryMenu mainMenu = new EntryMenu(context , null);
-        mainMenu.initResource(R.drawable.icon_menu , R.drawable.icon_menu_un , null , customMainSheet(mainMenu.getSetListenerView()));
+        mainMenu.initResource(R.drawable.icon_menu , R.drawable.icon_menu_un , null , false , customMainSheet(mainMenu.getSetListenerView()));
         myMenus.add(mainMenu);
         //拍照
         if(takePhoto){
             EntryMenu takePhotoMenu = new EntryMenu(context , null);
-            takePhotoMenu.initResource(R.drawable.icon_camera , R.drawable.icon_camera_un , null , null);
+            takePhotoMenu.initResource(R.drawable.icon_camera , R.drawable.icon_camera_un , null , false , null);
 
             myMenus.add(takePhotoMenu);
         }
         if(pickImage){
             EntryMenu picImageMenu = new EntryMenu(context , null);
             View picImageBottomSheetView = LayoutInflater.from(context).inflate(R.layout.sheet_photo , null);
-            picImageMenu.initResource(R.drawable.icon_photo , R.drawable.icon_photo_un , null , picImageBottomSheetView);
+            picImageMenu.initResource(R.drawable.icon_photo , R.drawable.icon_photo_un , null , true , picImageBottomSheetView);
             //设置对应的监听
-            LinearLayout sheet_photo_pull = picImageBottomSheetView.findViewById(R.id.sheet_photo_pull);
-            sheet_photo_pull.setOnTouchListener(((view, motionEvent) -> {
+            sheet_photo_pull_bar.setOnTouchListener(((view, motionEvent) -> {
                 switch (motionEvent.getAction()){
+                    case MotionEvent.ACTION_UP : {
+                        if(null == dashBoardLayoutParam){
+                            dashBoardLayoutParam = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
+                        }
+                        if(null == sheet_photo_title_layoutParam){
+                            sheet_photo_title_layoutParam = new LinearLayout.LayoutParams(sheet_photo_title_layout.getLayoutParams());
+                        }
+
+                        if(dashBoardLayoutParam.height > screen_height - 800){
+                            //设置为最大高度
+                            dashBoardLayoutParam.height = screen_height - 200;
+                            sheet_photo_title_layoutParam.height = 140;
+                        }else{
+                            dashBoardLayoutParam.height = keyBoardHeight;
+                            sheet_photo_title_layoutParam.height = 0;
+                        }
+                        dashBoardLayoutParam.topMargin = keyBoardHeight + bottom_entry_menu_board.getHeight() - dashBoardLayoutParam.height;
+                        bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
+                        sheet_photo_title_layout.setLayoutParams(sheet_photo_title_layoutParam);
+
+                        break;
+                    }
                     case MotionEvent.ACTION_MOVE : {
                         //监听点击坐标
                         float position_y = motionEvent.getY();
-                        pullSheetPhoto(picImageBottomSheetView ,  (int) position_y);
+                        pullDashBoard(picImageBottomSheetView , (int) position_y);
 
                         break;
                     }
                 }
-
                 return false;
             }));
             myMenus.add(picImageMenu);
@@ -108,7 +125,7 @@ public class BottomEntry extends BottomEntryBase{
         if(recordVoice){
             EntryMenu recordVoiceMenu = new EntryMenu(context , null);
             View recordVoiceDialogView = LayoutInflater.from(context).inflate(R.layout.dialog_voice , null);
-            recordVoiceMenu.initResource(R.drawable.icon_mic , R.drawable.icon_mic_un , recordVoiceDialogView , null);
+            recordVoiceMenu.initResource(R.drawable.icon_mic , R.drawable.icon_mic_un , recordVoiceDialogView , false , null);
             recordVoiceMenu.getSetListenerView().setOnTouchListener((view, motionEvent) -> {
                 //当子类布局滑动时，父类不拦截事件
                 recordVoiceMenu.getSetListenerView().getParent().requestDisallowInterceptTouchEvent(true);
@@ -140,16 +157,51 @@ public class BottomEntry extends BottomEntryBase{
         return myMenus;
     }
 
-    private LinearLayout.LayoutParams sheet_photo_layoutParam ;
-    protected void pullSheetPhoto(View sheet_photo_view , int position_y){
+    private FrameLayout.LayoutParams dashBoardLayoutParam ;
+    private LinearLayout.LayoutParams sheet_photo_title_layoutParam;
+    /** 拉伸 面板
+     *
+     * 面板拉伸后， 超过了entryView的范围，导致当中的view无法设置onTouch（onClick）监听
+     *
+     * **/
+    // sheet_photo中的各种组件
+    private LinearLayout sheet_photo_title_layout;
+    private ImageView sheet_photo_close;
+    private TextView sheet_photo_main_title;
+    private TextView sheet_photo_side_title;
+    protected void pullDashBoard(View sheet_view , int position_y){
 
-        // 该view 包含在 bottom_sheet_dashboard 中， bottom_sheet_dashboard为LinearLayout布局
-        if(null == sheet_photo_layoutParam){
-            sheet_photo_layoutParam = new LinearLayout.LayoutParams(sheet_photo_view.getLayoutParams());
+        if(null == dashBoardLayoutParam){
+            dashBoardLayoutParam = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
         }
-        Log.i("aaa" , "输出 view的高度 : " + sheet_photo_layoutParam.height);
-        sheet_photo_layoutParam.height = sheet_photo_layoutParam.height -position_y ;
-        sheet_photo_view.setLayoutParams(sheet_photo_layoutParam);
+
+
+        if(dashBoardLayoutParam.height - position_y < keyBoardHeight || dashBoardLayoutParam.height < keyBoardHeight){
+            dashBoardLayoutParam.height = keyBoardHeight;
+        }else if(dashBoardLayoutParam.height - position_y >= screen_height - 200 || dashBoardLayoutParam.height >= screen_height - 200){
+            dashBoardLayoutParam.height = screen_height - 200;
+        }else{
+            dashBoardLayoutParam.height = dashBoardLayoutParam.height  - position_y ;
+
+            // 变动 title的布局
+            sheet_photo_title_layout = sheet_view.findViewById(R.id.sheet_photo_title_layout);
+            if(null == sheet_photo_title_layoutParam){
+                sheet_photo_title_layoutParam = new LinearLayout.LayoutParams(sheet_photo_title_layout.getLayoutParams());
+
+            }
+            if(sheet_photo_title_layoutParam.height - position_y / 7 < 0 || sheet_photo_title_layoutParam.height < 0){
+                sheet_photo_title_layoutParam.height = 0;
+            }else if(sheet_photo_title_layoutParam.height - position_y / 7 > 140 || sheet_photo_title_layoutParam.height  > 140){
+                sheet_photo_title_layoutParam.height = 140;
+            }else{
+                sheet_photo_title_layoutParam.height = sheet_photo_title_layoutParam.height - position_y / 7;
+            }
+            sheet_photo_title_layout.setLayoutParams(sheet_photo_title_layoutParam);
+
+
+        }
+        dashBoardLayoutParam.topMargin = keyBoardHeight + bottom_entry_menu_board.getHeight() - dashBoardLayoutParam.height;
+        bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
 
     }
     /**
@@ -160,18 +212,37 @@ public class BottomEntry extends BottomEntryBase{
      * **/
 
     /** 可以自定义main_sheet的view以及各种监听 **/
-    public View customMainSheet(View view_setListen_on){
+    public View customMainSheet(View menu_icon_view){
         return LayoutInflater.from(context).inflate(R.layout.sheet_main_dialog , null);
     }
     //自定义的按钮
+    @SuppressLint("ClickableViewAccessibility")
     public  List<EntryMenu> customMenu(){
         List<EntryMenu> customMenus = new ArrayList<>();
         //在增加一个menu
         EntryMenu custom1 = new EntryMenu(context , null);
-        custom1.initResource(R.drawable.icon_menu_def , R.drawable.icon_menu_def_un,null , null);
+        custom1.initResource(R.drawable.icon_menu_def , R.drawable.icon_menu_def_un,null , true , null);
+        //设置对应的监听
+        sheet_photo_pull_bar.setOnTouchListener(((view, motionEvent) -> {
+                    switch (motionEvent.getAction()) {
+                        case MotionEvent.ACTION_MOVE: {
+                            float position_y = motionEvent.getY();
+                            if(null == dashBoardLayoutParam){
+                                dashBoardLayoutParam = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
+                            }
+
+                                dashBoardLayoutParam.height = dashBoardLayoutParam.height  - (int) position_y ;
+
+                            dashBoardLayoutParam.topMargin = keyBoardHeight + bottom_entry_menu_board.getHeight() - dashBoardLayoutParam.height;
+                            bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
+                            break;
+                        }
+                    }
+                    return false;
+                }));
         customMenus.add(custom1);
         EntryMenu custom2 = new EntryMenu(context , null);
-        custom2.initResource(R.drawable.icon_menu_def , R.drawable.icon_menu_def_un,null , null);
+        custom2.initResource(R.drawable.icon_menu_def , R.drawable.icon_menu_def_un,null , false , null);
         customMenus.add(custom2);
         return customMenus;
     }

@@ -6,9 +6,12 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,22 +34,32 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
     public Context context;
     private Handler handler = new Handler();
     public View rootView;
-    private View entryView;
-    private FrameLayout bottom_entry_dialog_frameLayout;
-    private LinearLayout bottom_entry_menu_board;
-    private LinearLayout bottom_entry_menus_layout;
-    private HorizontalScrollView bottom_entry_menus_scrollView;
-    private LinearLayout bottom_entry_menus_scrollView_layout;
+    public View entryView;
+    public FrameLayout bottom_entry_dialog_frameLayout;
+    public LinearLayout bottom_entry_menu_board;
+    public LinearLayout bottom_entry_menus_layout;
+    public HorizontalScrollView bottom_entry_menus_scrollView;
+    public LinearLayout bottom_entry_menus_scrollView_layout;
     private List<EntryMenu> entryMenus;
     private EntryMenu bottom_entry_menu_switch;
     private EditText bottom_entry_edit;
     private EntryMenu bottom_entry_emoji;
     private LinearLayout bottom_entry_send;
-    private LinearLayout bottom_entry_dashboard;
+    public LinearLayout bottom_entry_dashboard;
+    public LinearLayout sheet_photo_pull_bar;
+    public LinearLayout dashboard_view_wrap;
 
+    //自定义的部分
+    public boolean takePhoto;
+    public boolean pickImage;
+    public int maxPhotoNum;
+    public boolean recordVoice;
+    public Drawable themeColor;
 
     //常量
     public int keyBoardHeight;
+    public int screen_height;
+    public int screen_width;
     public BottomEntryBase(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.context = context;
@@ -94,12 +107,14 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
         bottom_entry_emoji = entryView.findViewById(R.id.bottom_entry_emoji);
         bottom_entry_send = entryView.findViewById(R.id.bottom_entry_send);
         bottom_entry_dashboard = entryView.findViewById(R.id.bottom_entry_dashboard);
+        sheet_photo_pull_bar = entryView.findViewById(R.id.sheet_photo_pull_bar);
+        dashboard_view_wrap = entryView.findViewById(R.id.dashboard_view_wrap);
     }
     private void setBaseComponent(){
         bottom_entry_dialog_frameLayout.setVisibility(GONE);
 
-        bottom_entry_menu_switch.initResource( R.drawable.icon_contract , R.drawable.icon_spread  , null , null);
-        bottom_entry_emoji.initResource( R.drawable.icon_emoji , R.drawable.icon_emoji_un , null , null);
+        bottom_entry_menu_switch.initResource( R.drawable.icon_contract , R.drawable.icon_spread  , null , false , null);
+        bottom_entry_emoji.initResource( R.drawable.icon_emoji , R.drawable.icon_emoji_un , null , false ,  null);
         bottom_entry_menu_switch.setOnEntryMenuClickListener(this);
     }
 
@@ -109,20 +124,20 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
             Rect rect = new Rect();
             findActivity(context).getWindow().getDecorView().getWindowVisibleDisplayFrame(rect);
             //获取屏幕的高度
-            int screen_height = findActivity(context).getWindow().getDecorView().getRootView().getHeight();
-
+            screen_height = findActivity(context).getWindow().getDecorView().getRootView().getHeight();
+            screen_width = findActivity(context).getWindow().getDecorView().getRootView().getWidth();
             int virtualHeight = VirtualkeyUtils.getNavigationBarHeight(findActivity(context));
             if(screen_height - rect.bottom - virtualHeight != 0){
                 keyBoardHeight = screen_height - rect.bottom - virtualHeight;
                 if(keyBoardHeight > 100){
-                    setDashBoardHeight();
+                    setDashBoardLayoutParam();
                 }
 
             }
         });
 
     }
-    private void setDashBoardHeight(){
+    private void setDashBoardLayoutParam(){
         FrameLayout.LayoutParams fl = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
         fl.height = keyBoardHeight;
         fl.topMargin = bottom_entry_menu_board.getHeight();
@@ -145,14 +160,16 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
 
     private void dashBoardShow(View view){
         bottom_entry_dashboard.setVisibility(VISIBLE);
-        bottom_entry_dashboard.removeAllViews();
+        dashboard_view_wrap.removeAllViews();
         ViewGroup viewParent = (ViewGroup) view.getParent();
         if(null != viewParent){
             viewParent.removeView(view);
         }
-        bottom_entry_dashboard.addView(view);
+        dashboard_view_wrap.addView(view);
+        view.getParent().requestDisallowInterceptTouchEvent(true);
         LinearLayout.LayoutParams ll = new LinearLayout.LayoutParams(view.getLayoutParams());
         ll.height = keyBoardHeight;
+        ll.width = screen_width;
         view.setLayoutParams(ll);
     }
     private void setDialogView(View view){
@@ -176,13 +193,15 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
         }else{
             if(null != entryMenu.getDialogView()){
                 entryMenu.setEntryMenuDialogListener(this);
+
                 setDialogView(entryMenu.getDialogView());
             }else if(null != entryMenu.getBottomSheetView()){
+                sheet_photo_pull_bar.setVisibility(entryMenu.isShowPullBar() ? VISIBLE : GONE);
                 dashBoardShow(entryMenu.getBottomSheetView());
-            }else{
+            }/*else{
                 bottom_entry_dialog_frameLayout.setVisibility(GONE);
                 bottom_entry_dashboard.setVisibility(GONE);
-            }
+            }*/
         }
 
 

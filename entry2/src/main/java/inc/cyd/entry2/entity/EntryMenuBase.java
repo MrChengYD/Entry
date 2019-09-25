@@ -20,6 +20,7 @@ public abstract class EntryMenuBase extends LinearLayout {
     private int menu_icon_unClickable;
     private View dialogView = null;
     private View bottomSheetView = null;
+    private boolean show_pull_bar;
     private EntryMenuDialogListener entryMenuDialogListener;
     public EntryMenuBase(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -36,11 +37,12 @@ public abstract class EntryMenuBase extends LinearLayout {
         menu_icon_unClickable = R.drawable.icon_menu_def_un;
 
     }
-    public void initResource(int menu_icon_clickable , int menu_icon_unClickable , View dialogView , View bottomSheetView){
+    public void initResource(int menu_icon_clickable , int menu_icon_unClickable , View dialogView  , boolean show_pull_bar , View bottomSheetView){
         this.menu_icon_clickable = menu_icon_clickable;
         this.menu_icon_unClickable = menu_icon_unClickable;
         this.dialogView = dialogView;
         this.bottomSheetView = bottomSheetView;
+        this.show_pull_bar = show_pull_bar;
         //设置默认显示的值
         menuImageView.setImageResource(menu_icon_clickable);
     }
@@ -76,6 +78,7 @@ public abstract class EntryMenuBase extends LinearLayout {
         return bottomSheetView;
     }
 
+    public boolean isShowPullBar(){return show_pull_bar;}
 
     public void setMenuState(boolean state){
         menuImageView.setImageResource(state ? menu_icon_clickable : menu_icon_unClickable);

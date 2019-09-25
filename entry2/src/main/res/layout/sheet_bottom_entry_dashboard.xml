@@ -1,10 +1,37 @@
 <LinearLayout
-    android:id="@+id/bottom_entry_dashboard"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="300dp"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:clickable="true"
+    android:focusable="true"
     android:orientation="vertical"
-    android:clipChildren="false"
-    android:gravity="bottom">
+    android:background="@color/google_assistant_background">
+    <LinearLayout
+        android:id="@+id/sheet_photo_pull_bar"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:paddingStart="80dp"
+        android:paddingEnd="80dp"
+        android:layout_gravity="center_horizontal"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true">
+        <View
+            android:layout_width="50dp"
+            android:layout_height="4dp"
+            android:background="@drawable/shape_corner_sheet_photo_pull"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/dashboard_view_wrap"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+    </LinearLayout>
+
+
 
 </LinearLayout>
