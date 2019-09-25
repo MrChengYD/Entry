@@ -5,6 +5,8 @@
     android:layout_height="wrap_content"
     android:layout_gravity="bottom"
     android:clipChildren="false"
+    android:clickable="true"
+    android:background="@color/google_yellow"
     android:orientation="vertical">
     <FrameLayout
         android:id="@+id/bottom_entry_dialog_frameLayout"
@@ -116,15 +118,15 @@
                 android:gravity="center"/>
         </LinearLayout>
     </LinearLayout>
-    <View
-        android:layout_width="1dp"
-        android:layout_height="20dp"
-        android:layout_marginTop="45dp"/>
-    <include
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:clipChildren="false"
-        layout="@layout/sheet_bottom_entry_dashboard"
-        android:layout_marginTop="40dp"/>
+    <!-- 在java代码中设置 marginTop -->
+    <LinearLayout
+        android:id="@+id/bottom_entry_dashboard"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:background="@color/colorPrimary"
+        android:orientation="vertical">
+
+    </LinearLayout>
+
 
 </FrameLayout>

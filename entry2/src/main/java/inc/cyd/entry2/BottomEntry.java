@@ -1,6 +1,5 @@
 package inc.cyd.entry2;
 
-import android.accounts.AbstractAccountAuthenticator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -95,12 +94,11 @@ public class BottomEntry extends BottomEntryBase{
                     case MotionEvent.ACTION_MOVE : {
                         //监听点击坐标
                         float position_y = motionEvent.getY();
-                        pullSheetPhoto(picImageBottomSheetView ,  (int) position_y);
+                        pullDashBoard((int) position_y);
 
                         break;
                     }
                 }
-
                 return false;
             }));
             myMenus.add(picImageMenu);
@@ -140,16 +138,33 @@ public class BottomEntry extends BottomEntryBase{
         return myMenus;
     }
 
-    private LinearLayout.LayoutParams sheet_photo_layoutParam ;
-    protected void pullSheetPhoto(View sheet_photo_view , int position_y){
+    private FrameLayout.LayoutParams dashBoardLayoutParam ;
+    /** 拉伸 面板
+     *
+     * 面板拉伸后， 超过了entryView的范围，导致当中的view无法设置onTouch（onClick）监听
+     *
+     * **/
+    protected void pullDashBoard(int position_y){
 
-        // 该view 包含在 bottom_sheet_dashboard 中， bottom_sheet_dashboard为LinearLayout布局
-        if(null == sheet_photo_layoutParam){
-            sheet_photo_layoutParam = new LinearLayout.LayoutParams(sheet_photo_view.getLayoutParams());
+        // 拉伸 bottom_entry_dashboard
+        if(null == dashBoardLayoutParam){
+            dashBoardLayoutParam = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
         }
-        Log.i("aaa" , "输出 view的高度 : " + sheet_photo_layoutParam.height);
-        sheet_photo_layoutParam.height = sheet_photo_layoutParam.height -position_y ;
-        sheet_photo_view.setLayoutParams(sheet_photo_layoutParam);
+        Log.i("aaa" , "输出 dashBoard 的高度 : " + dashBoardLayoutParam.height);
+        //Log.i("aaa" , "输出 bottom_entry_menu_board 的高度 : " + bottom_entry_menu_board.getHeight());//141
+        Log.i("aaa" , "输出 screen_height 的高度 : " + screen_height);
+        if(dashBoardLayoutParam.height - position_y < keyBoardHeight || dashBoardLayoutParam.height < keyBoardHeight){
+            Log.i("aaa" , "1");
+            dashBoardLayoutParam.height = keyBoardHeight;
+        }else if(dashBoardLayoutParam.height - position_y >= screen_height - 200 || dashBoardLayoutParam.height >= screen_height - 200){
+            Log.i("aaa" , "2");
+            dashBoardLayoutParam.height = screen_height - 200;
+        }else{
+            Log.i("aaa" , "3");
+            dashBoardLayoutParam.height = dashBoardLayoutParam.height  - position_y ;
+        }
+        dashBoardLayoutParam.topMargin = keyBoardHeight + bottom_entry_menu_board.getHeight() - dashBoardLayoutParam.height;
+        bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
 
     }
     /**
@@ -160,7 +175,7 @@ public class BottomEntry extends BottomEntryBase{
      * **/
 
     /** 可以自定义main_sheet的view以及各种监听 **/
-    public View customMainSheet(View view_setListen_on){
+    public View customMainSheet(View menu_icon_view){
         return LayoutInflater.from(context).inflate(R.layout.sheet_main_dialog , null);
     }
     //自定义的按钮
