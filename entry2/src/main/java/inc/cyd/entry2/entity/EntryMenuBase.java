@@ -1,75 +1,130 @@
 package inc.cyd.entry2.entity;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import inc.cyd.entry2.R;
+import inc.cyd.entry2.interfaces.EntryDashBoardPullListener;
+import inc.cyd.entry2.interfaces.EntryDialogListener;
+import inc.cyd.entry2.interfaces.EntryMenuClickListener;
+import inc.cyd.entry2.interfaces.EntryMenuTouchListener;
 
-public abstract class EntryMenuBase extends LinearLayout {
+public abstract class EntryMenuBase extends LinearLayout{
 
     private Context context;
-    public View menuView;
-    public LinearLayout entry_menu_layout;
+    private View menuView;
+    public LinearLayout clickAbleView;
     private ImageView menuImageView;
 
-    private int menu_icon_clickable;
-    private int menu_icon_unClickable;
-    private View dialogView = null;
-    private View bottomSheetView = null;
-    private boolean show_pull_bar;
-    private EntryMenuDialogListener entryMenuDialogListener;
+    protected int turnOn_Resource;
+    protected int turnOff_Resource;
+    protected View dialogView = null;
+    protected View bottomSheetView = null;
+
+    //接口
+    //按钮点击接口
+    public EntryMenuClickListener entryMenuClickListener = null;
+    protected EntryMenuTouchListener entryMenuTouchListener = null;
+    //dialog接口
+    private EntryDialogListener entryDialogListener = null;
+    //面板移动接口
+    private EntryDashBoardPullListener entryDashBoardPullListener = null;
+
     public EntryMenuBase(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.context = context;
         menuView =  LayoutInflater.from(context).inflate(R.layout.peace_menu_layout , this , true);
         initMenu();
-        setClickListener();
+        setMenuClickEvent();
+        setMenuTouchEvent();
     }
-    public void initMenu(){
+    private final void initMenu(){
+        initMenuBaseView();
+        customMenuResource(R.drawable.icon_menu_def , R.drawable.icon_menu_def_un);
+        customMenuFunView(null , null);
+    }
+    private final void initMenuBaseView(){
         menuImageView = menuView.findViewById(R.id.entry_menu);
-        entry_menu_layout = menuView.findViewById(R.id.entry_menu_layout);
-        //默认值
-        menu_icon_clickable = R.drawable.icon_menu_def;
-        menu_icon_unClickable = R.drawable.icon_menu_def_un;
-
+        clickAbleView = menuView.findViewById(R.id.clickAbleView);
     }
-    public void initResource(int menu_icon_clickable , int menu_icon_unClickable , View dialogView  , boolean show_pull_bar , View bottomSheetView){
-        this.menu_icon_clickable = menu_icon_clickable;
-        this.menu_icon_unClickable = menu_icon_unClickable;
-        this.dialogView = dialogView;
-        this.bottomSheetView = bottomSheetView;
-        this.show_pull_bar = show_pull_bar;
-        //设置默认显示的值
-        menuImageView.setImageResource(menu_icon_clickable);
+    public abstract void customMenuResource(int turnOn_Resource , int turnOff_Resource);
+    public abstract void customMenuFunView(View dialogView , View bottomSheetView);
+
+
+
+
+    //设置 按钮点击监听
+    public void setEntryMenuClickListener(EntryMenuClickListener entryMenuClickListener){
+        this.entryMenuClickListener = entryMenuClickListener;
     }
 
-    public void setEntryMenuDialogListener(EntryMenuDialogListener entryMenuDialogListener){
-        this.entryMenuDialogListener = entryMenuDialogListener;
+    public void setEntryMenuTouchListener(EntryMenuTouchListener entryMenuTouchListener) {
+        this.entryMenuTouchListener = entryMenuTouchListener;
+    }
+
+    //设置 dialog监听
+    public void setEntryDialogListener(EntryDialogListener entryDialogListener){
+        this.entryDialogListener = entryDialogListener;
+    }
+    public void setEntryDashBoardPullListener(EntryDashBoardPullListener entryDashBoardPullListener) {
+        this.entryDashBoardPullListener = entryDashBoardPullListener;
+    }
+
+    public EntryDashBoardPullListener getEntryDashBoardPullListener() {
+        return entryDashBoardPullListener;
     }
 
     public void entryDialogShow(){
-        if(null != this.entryMenuDialogListener){
-            this.entryMenuDialogListener.show();
+        if(null != this.entryDialogListener){
+            this.entryDialogListener.entryDialogShow();
         }
     }
     public void entryDialogDismiss(){
-        if(null != this.entryMenuDialogListener){
-            this.entryMenuDialogListener.dismiss();
+        if(null != this.entryDialogListener){
+            this.entryDialogListener.entryDialogDisMiss();
         }
     }
 
-    public interface EntryMenuDialogListener {
-        void show();
-        void dismiss();
+    @SuppressLint("ClickableViewAccessibility")
+    private void setMenuTouchEvent(){
+        if(null != entryMenuTouchListener){
+            clickAbleView.setOnTouchListener(((view, motionEvent) -> {
+                clickAbleView.getParent().requestDisallowInterceptTouchEvent(true);
+                switch (motionEvent.getAction()) {
+
+                    case MotionEvent.ACTION_DOWN: {
+                        entryMenuTouchListener.start();
+                        break;
+                    }
+                    case MotionEvent.ACTION_UP: {
+                        entryMenuTouchListener.end();
+                        break;
+                    }
+                    case MotionEvent.ACTION_MOVE: {
+                        if (!clickAbleView.isClickable()) {
+                            break;
+                        }
+                        entryMenuTouchListener.move(motionEvent.getX() , motionEvent.getY());
+                        break;
+                    }
+                }
+
+                return false;
+            }));
+        }
     }
+    protected abstract void setMenuClickEvent();
     //获取可以设置监听的view
-    public View getSetListenerView(){
-        return entry_menu_layout;
+    public LinearLayout getClickAbleView() {
+        return clickAbleView;
     }
+
     public View getDialogView() {
         return dialogView;
     }
@@ -77,21 +132,21 @@ public abstract class EntryMenuBase extends LinearLayout {
     public View getBottomSheetView() {
         return bottomSheetView;
     }
-
-    public boolean isShowPullBar(){return show_pull_bar;}
-
-    public void setMenuState(boolean state){
-        menuImageView.setImageResource(state ? menu_icon_clickable : menu_icon_unClickable);
-    }
-
-    public abstract void setClickListener();
-
-
     /** 对外的方法 **/
 
+
+    public void switchState(boolean state){
+        menuImageView.setImageResource(state ? turnOn_Resource : turnOff_Resource);
+    }
+
+
+
+
+
+
     public void setMenuClickAble(boolean clickAble){
-        entry_menu_layout.setClickable(clickAble);
-        setMenuState(clickAble);
+        clickAbleView.setClickable(clickAble);
+        switchState(clickAble);
     }
 
 }

@@ -3,7 +3,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content" >
     <LinearLayout
-        android:id="@+id/entry_menu_layout"
+        android:id="@+id/clickAbleView"
         android:layout_width="@dimen/entry_menu_size"
         android:layout_height="@dimen/entry_menu_size"
         android:padding="@dimen/entry_menu_padding"

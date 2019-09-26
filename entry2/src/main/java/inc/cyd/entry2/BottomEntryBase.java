@@ -2,17 +2,14 @@ package inc.cyd.entry2;
 
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
@@ -26,11 +23,14 @@ import java.util.List;
 
 import inc.cyd.entry2.entity.EntryMenu;
 import inc.cyd.entry2.entity.EntryMenuBase;
+import inc.cyd.entry2.interfaces.EntryDashBoardPullListener;
+import inc.cyd.entry2.interfaces.EntryDialogListener;
+import inc.cyd.entry2.interfaces.EntryMenuClickListener;
 import inc.cyd.entry2.util.VirtualkeyUtils;
 
 import static inc.cyd.entry2.util.EntryUtil.findActivity;
 
-public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.OnEntryMenuClickListener, EntryMenuBase.EntryMenuDialogListener {
+public abstract class BottomEntryBase extends LinearLayout implements EntryDialogListener, EntryMenuClickListener {
     public Context context;
     private Handler handler = new Handler();
     public View rootView;
@@ -40,17 +40,14 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
     public LinearLayout bottom_entry_menus_layout;
     public HorizontalScrollView bottom_entry_menus_scrollView;
     public LinearLayout bottom_entry_menus_scrollView_layout;
-    private List<EntryMenu> entryMenus;
+    private List< ? extends EntryMenuBase> entryMenus;
     private EntryMenu bottom_entry_menu_switch;
     private EditText bottom_entry_edit;
     private EntryMenu bottom_entry_emoji;
     private LinearLayout bottom_entry_send;
     public LinearLayout bottom_entry_dashboard;
-<<<<<<< HEAD
     public LinearLayout sheet_photo_pull_bar;
     public LinearLayout dashboard_view_wrap;
-=======
->>>>>>> d5f758fd1968ddb111b61aa756184e63879827c7
 
     //自定义的部分
     public boolean takePhoto;
@@ -63,6 +60,10 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
     public int keyBoardHeight;
     public int screen_height;
     public int screen_width;
+
+    //接口
+    // 1 面板滑动接口
+    public EntryDashBoardPullListener entryDashBoardPullListener;
     public BottomEntryBase(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.context = context;
@@ -76,11 +77,17 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
         initBaseComponent();
         setBaseComponent();
         setEntryMenus();
-        setEntryMenusListener();
-        setBaseListener();
         initKeyboardHeight();
         initContact();
+        // 设置各类接口
+        //按钮点击接口
+        setEntryMenusListener();
+        setBaseListener();
 
+        /**
+         * 设置面板滑动接口
+         * **/
+        setDashBoardPullListener();
     }
 
 
@@ -95,9 +102,7 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
                 rl.width = menus_layout_width;
                 bottom_entry_menus_layout.setLayoutParams(rl);
             }
-
         });
-
     }
 
     private void initBaseComponent(){
@@ -117,9 +122,9 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
     private void setBaseComponent(){
         bottom_entry_dialog_frameLayout.setVisibility(GONE);
 
-        bottom_entry_menu_switch.initResource( R.drawable.icon_contract , R.drawable.icon_spread  , null , false , null);
-        bottom_entry_emoji.initResource( R.drawable.icon_emoji , R.drawable.icon_emoji_un , null , false ,  null);
-        bottom_entry_menu_switch.setOnEntryMenuClickListener(this);
+        bottom_entry_menu_switch.customMenuResource( R.drawable.icon_contract , R.drawable.icon_spread);
+        bottom_entry_emoji.customMenuResource( R.drawable.icon_emoji , R.drawable.icon_emoji_un);
+        bottom_entry_menu_switch.setEntryMenuClickListener(this);
     }
 
     private void initKeyboardHeight(){
@@ -129,21 +134,16 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
             findActivity(context).getWindow().getDecorView().getWindowVisibleDisplayFrame(rect);
             //获取屏幕的高度
             screen_height = findActivity(context).getWindow().getDecorView().getRootView().getHeight();
-<<<<<<< HEAD
             screen_width = findActivity(context).getWindow().getDecorView().getRootView().getWidth();
-=======
 
->>>>>>> d5f758fd1968ddb111b61aa756184e63879827c7
             int virtualHeight = VirtualkeyUtils.getNavigationBarHeight(findActivity(context));
             if(screen_height - rect.bottom - virtualHeight != 0){
                 keyBoardHeight = screen_height - rect.bottom - virtualHeight;
                 if(keyBoardHeight > 100){
                     setDashBoardLayoutParam();
                 }
-
             }
         });
-
     }
     private void setDashBoardLayoutParam(){
         FrameLayout.LayoutParams fl = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
@@ -160,15 +160,88 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
     @SuppressLint("ClickableViewAccessibility")
     private void setEntryMenusListener(){
         rootView.setOnTouchListener(((view, motionEvent) -> bottom_entry_dashboard.dispatchTouchEvent(motionEvent)));
-
         if(null != entryMenus){
-
-            entryMenus.forEach(item -> item.setOnEntryMenuClickListener(this));
+            entryMenus.forEach(item -> item.setEntryMenuClickListener(this));
         }
     }
     private void setBaseListener(){
 
     }
+
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void setDashBoardPullListener(){
+        //滑动监听 ， 然后通过自定义的接口传递面板的状态
+        sheet_photo_pull_bar.setOnTouchListener((view, motionEvent) -> {
+            if(null != this.entryDashBoardPullListener){
+                //sheet_photo_pull_bar 可见
+                sheet_photo_pull_bar.setVisibility(VISIBLE);
+                switch (motionEvent.getAction()) {
+                    case MotionEvent.ACTION_DOWN: {
+                        /** 传递当前状态 **/
+                        entryDashBoardPullListener.start();
+                        break;
+                    }
+                    case MotionEvent.ACTION_UP: {
+                        /** 根据抬起手指时 所在的位置  判断状态 并通过接口传递 **/
+                        if (null == dashBoardLayoutParam) {
+                            dashBoardLayoutParam = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
+                        }
+
+                        if (dashBoardLayoutParam.height > screen_height - 500) {
+                            //设置为最大高度
+                            dashBoardLayoutParam.height = screen_height - 200;
+                            //更新接口状态
+                            entryDashBoardPullListener.onTop();
+                        } else if(dashBoardLayoutParam.height - 300 < keyBoardHeight){
+                            dashBoardLayoutParam.height = keyBoardHeight;
+                            //更新接口状态
+                            entryDashBoardPullListener.onBottom();
+                        }else{
+                            dashBoardLayoutParam.height = keyBoardHeight + 600;
+                            //更新接口状态
+                            entryDashBoardPullListener.onMiddle();
+                        }
+                        dashBoardLayoutParam.topMargin = keyBoardHeight + bottom_entry_menu_board.getHeight() - dashBoardLayoutParam.height;
+                        bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
+
+                        break;
+                    }
+                    case MotionEvent.ACTION_MOVE: {
+                        // motionEvent.getY()  获取到点击的坐标
+                        /** 开始动画 **/
+                        pullDashBoard(motionEvent.getY());
+                        /** 通过接口传递状态 并 将手指的纵坐标通过接口传递 **/
+                        entryDashBoardPullListener.move(motionEvent.getY());
+                        break;
+                    }
+                }
+            }else{
+                // 没有滑动监听 sheet_photo_pull_bar 不可见
+                sheet_photo_pull_bar.setVisibility(GONE);
+            }
+
+            return false;
+        });
+
+    }
+    private FrameLayout.LayoutParams dashBoardLayoutParam;
+
+    protected void pullDashBoard ( float positionY){
+        if (null == dashBoardLayoutParam) {
+            dashBoardLayoutParam = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
+        }
+        if (dashBoardLayoutParam.height - positionY < keyBoardHeight || dashBoardLayoutParam.height < keyBoardHeight) {
+            dashBoardLayoutParam.height = keyBoardHeight;
+        } else if (dashBoardLayoutParam.height - positionY >= screen_height - 200 || dashBoardLayoutParam.height >= screen_height - 200) {
+            dashBoardLayoutParam.height = screen_height - 200;
+        } else {
+            dashBoardLayoutParam.height = dashBoardLayoutParam.height - (int) positionY;
+        }
+        dashBoardLayoutParam.topMargin = keyBoardHeight + bottom_entry_menu_board.getHeight() - dashBoardLayoutParam.height;
+        bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
+    }
+
 
     private void dashBoardShow(View view){
         bottom_entry_dashboard.setVisibility(VISIBLE);
@@ -195,37 +268,7 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
         bottom_entry_dialog_frameLayout.addView(view);
     }
 
-    @Override
-    public void onEntryMenu(EntryMenu entryMenu) {
-        if(bottom_entry_menu_switch == entryMenu){
-            //切换
-            toggleSpread();
-        }else if(bottom_entry_emoji == entryMenu){
-            //表情
-        }else{
-            if(null != entryMenu.getDialogView()){
-                entryMenu.setEntryMenuDialogListener(this);
 
-                setDialogView(entryMenu.getDialogView());
-            }else if(null != entryMenu.getBottomSheetView()){
-                sheet_photo_pull_bar.setVisibility(entryMenu.isShowPullBar() ? VISIBLE : GONE);
-                dashBoardShow(entryMenu.getBottomSheetView());
-            }/*else{
-                bottom_entry_dialog_frameLayout.setVisibility(GONE);
-                bottom_entry_dashboard.setVisibility(GONE);
-            }*/
-        }
-
-
-
-
-
-        //entryMenus.forEach(item -> item.setMenuClickAble(false));
-        //entryMenu.setMenuClickAble(true);
-        //manageMenuClickable(entryMenu);
-
-
-    }
     protected boolean spread = true;
     protected void toggleSpread(){
         new Thread(() -> {
@@ -244,7 +287,7 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
     Runnable contractMenuRunnable = this::contract;
     Runnable spreadMenuRunnable = this::spread;
     protected void contract(){
-        bottom_entry_menu_switch.setMenuState(!spread);
+        bottom_entry_menu_switch.switchState(!spread);
         if(null == bottom_entry_menus_layout){
             return;
         }
@@ -261,7 +304,7 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
         spread = false;
     }
     protected void spread(){
-        bottom_entry_menu_switch.setMenuState(!spread);
+        bottom_entry_menu_switch.switchState(!spread);
         if(null == bottom_entry_menus_layout){
             return;
         }
@@ -297,20 +340,8 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
      *
      *
      * **/
-    private boolean dialogShow = false;
-    private boolean bottomSheetShow = false;
-    protected void manageMenuClickable(EntryMenu entryMenu){
-        dialogShow = bottom_entry_dialog_frameLayout.getVisibility() == VISIBLE;
-        bottomSheetShow = bottom_entry_dashboard.getVisibility() == VISIBLE;
 
 
-    }
-    protected void setMenusArrClickableButFirst(boolean clickable){
-
-    }
-    protected void setMenuArrClickableButFirstAndCustom(EntryMenu entryMenu , boolean clickable){
-
-    }
 
     public abstract void setAttribute(AttributeSet attributeSet);
 
@@ -324,14 +355,39 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryMenu.
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
-    public void show() {
+    public void entryDialogShow() {
         bottom_entry_dialog_frameLayout.setVisibility(VISIBLE);
 
     }
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
-    public void dismiss() {
+    public void entryDialogDisMiss() {
         bottom_entry_dialog_frameLayout.setVisibility(GONE);
+    }
+
+    @Override
+    public void onEntryMenuClick(EntryMenu entryMenu) {
+        if(bottom_entry_menu_switch == entryMenu){
+            //切换
+            toggleSpread();
+        }else if(bottom_entry_emoji == entryMenu){
+            //表情
+        }else{
+            if(null != entryMenu.getDialogView()){
+                entryMenu.setEntryDialogListener(this);
+
+                setDialogView(entryMenu.getDialogView());
+            }else if(null != entryMenu.getBottomSheetView()){
+                if(null != entryMenu.getEntryDashBoardPullListener()){
+                    sheet_photo_pull_bar.setVisibility(VISIBLE);
+                    this.entryDashBoardPullListener = entryMenu.getEntryDashBoardPullListener();
+                }else{
+                    sheet_photo_pull_bar.setVisibility(GONE);
+                }
+
+                dashBoardShow(entryMenu.getBottomSheetView());
+            }
+        }
     }
 }
