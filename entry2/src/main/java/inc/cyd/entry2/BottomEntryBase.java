@@ -1,5 +1,6 @@
 package inc.cyd.entry2;
 
+import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -12,7 +13,9 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
@@ -20,12 +23,14 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import java.util.List;
+import java.util.Objects;
 
 import inc.cyd.entry2.entity.EntryMenu;
 import inc.cyd.entry2.entity.EntryMenuBase;
-import inc.cyd.entry2.interfaces.EntryDashBoardPullListener;
+import inc.cyd.entry2.interfaces.EntryDashBoardShiftListener;
 import inc.cyd.entry2.interfaces.EntryDialogListener;
 import inc.cyd.entry2.interfaces.EntryMenuClickListener;
+import inc.cyd.entry2.util.AnimateUtil;
 import inc.cyd.entry2.util.VirtualkeyUtils;
 
 import static inc.cyd.entry2.util.EntryUtil.findActivity;
@@ -63,7 +68,8 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
 
     //接口
     // 1 面板滑动接口
-    public EntryDashBoardPullListener entryDashBoardPullListener;
+    public EntryDashBoardShiftListener entryDashBoardShiftListener;
+
     public BottomEntryBase(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.context = context;
@@ -74,6 +80,7 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
         //设置布局
         //布局文件
         entryView = LayoutInflater.from(context).inflate(R.layout.layout_bottom_entry, this , true);
+
         initBaseComponent();
         setBaseComponent();
         setEntryMenus();
@@ -159,27 +166,61 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
     }
     @SuppressLint("ClickableViewAccessibility")
     private void setEntryMenusListener(){
-        rootView.setOnTouchListener(((view, motionEvent) -> bottom_entry_dashboard.dispatchTouchEvent(motionEvent)));
+        //rootView.setOnTouchListener(((view, motionEvent) -> bottom_entry_dashboard.dispatchTouchEvent(motionEvent)));
         if(null != entryMenus){
             entryMenus.forEach(item -> item.setEntryMenuClickListener(this));
         }
     }
-    private void setBaseListener(){
 
+    /** 给整个布局设置触摸事件 **/
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void setBaseListener(){
+        rootView.setOnTouchListener((view, motionEvent) -> {
+            bottom_entry_edit.clearFocus();
+            return false;
+        });
+        //给整个view设置触摸事件
+        entryView.setOnTouchListener((view, motionEvent) -> {
+            entryView.setFocusable(true);
+            entryView.setFocusableInTouchMode(true);
+            entryView.requestFocus();
+            return false;
+        });
+
+        bottom_entry_edit.setOnFocusChangeListener((view , b ) -> {
+            if(!b){
+                // 关闭小键盘
+                closeKeyBoard(view);
+                // 如果当前的 菜单 处于 收缩状态
+                if(!spread){
+                    toggleSpread();
+                }
+            }else{
+                switchKeyBoardMode(bottom_entry_dashboard.getVisibility() == GONE);
+
+                if(spread){
+                    toggleSpread();
+                }
+
+            }
+        });
     }
 
 
+    //触发面板移动动画的空间距离参数
+    private final int DASHBOARD_ANIMATE_SPACE = 300;
     @SuppressLint("ClickableViewAccessibility")
     private void setDashBoardPullListener(){
         //滑动监听 ， 然后通过自定义的接口传递面板的状态
         sheet_photo_pull_bar.setOnTouchListener((view, motionEvent) -> {
-            if(null != this.entryDashBoardPullListener){
+            if(null != this.entryDashBoardShiftListener){
                 //sheet_photo_pull_bar 可见
                 sheet_photo_pull_bar.setVisibility(VISIBLE);
                 switch (motionEvent.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
                         /** 传递当前状态 **/
-                        entryDashBoardPullListener.start();
+                        entryDashBoardShiftListener.start();
                         break;
                     }
                     case MotionEvent.ACTION_UP: {
@@ -188,31 +229,43 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
                             dashBoardLayoutParam = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
                         }
 
-                        if (dashBoardLayoutParam.height > screen_height - 500) {
-                            //设置为最大高度
-                            dashBoardLayoutParam.height = screen_height - 200;
-                            //更新接口状态
-                            entryDashBoardPullListener.onTop();
-                        } else if(dashBoardLayoutParam.height - 300 < keyBoardHeight){
-                            dashBoardLayoutParam.height = keyBoardHeight;
-                            //更新接口状态
-                            entryDashBoardPullListener.onBottom();
+
+                        //输出 手指抬起时 ， 是向上移动还是向下移动
+                        // up  Y < 0 ; down Y > 0
+                        /**   当手指抬起时 , 如果此时view高度介于最高和最低之间 ，(留出空间范围为 DASHBOARD_ANIMATE_SPACE = 300 ) , 开启移动的动画， 参数为 motionEvent.getY()  : up  Y < 0 ; down Y > 0**/
+
+                        if(dashBoardLayoutParam.height > keyBoardHeight + DASHBOARD_ANIMATE_SPACE && dashBoardLayoutParam.height < screen_height - DASHBOARD_ANIMATE_SPACE){
+                            //开启动画
+                            dashBoardAnimate(motionEvent.getY());
+
                         }else{
-                            dashBoardLayoutParam.height = keyBoardHeight + 600;
-                            //更新接口状态
-                            entryDashBoardPullListener.onMiddle();
+                            //触发动画的距离不足
+                            if (dashBoardLayoutParam.height >= screen_height - DASHBOARD_ANIMATE_SPACE) {
+                                //设置为最大高度
+                                dashBoardLayoutParam.height = screen_height - 200;
+
+
+                                dashBoardLayoutParam.topMargin = 0;
+                                //更新接口状态
+                                entryDashBoardShiftListener.onTop();
+                            } else{
+                                dashBoardLayoutParam.height = keyBoardHeight;
+                                dashBoardLayoutParam.topMargin = bottom_entry_menu_board.getHeight();
+
+                                //更新接口状态
+                                entryDashBoardShiftListener.onBottom();
+                            }
+                            bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
                         }
-                        dashBoardLayoutParam.topMargin = keyBoardHeight + bottom_entry_menu_board.getHeight() - dashBoardLayoutParam.height;
-                        bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
+
 
                         break;
                     }
                     case MotionEvent.ACTION_MOVE: {
                         // motionEvent.getY()  获取到点击的坐标
-                        /** 开始动画 **/
+                        /** 执行拖动 **/
                         pullDashBoard(motionEvent.getY());
-                        /** 通过接口传递状态 并 将手指的纵坐标通过接口传递 **/
-                        entryDashBoardPullListener.move(motionEvent.getY());
+
                         break;
                     }
                 }
@@ -227,24 +280,151 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
     }
     private FrameLayout.LayoutParams dashBoardLayoutParam;
 
-    protected void pullDashBoard ( float positionY){
+    //拖动面板
+    private void pullDashBoard ( float positionY){
         if (null == dashBoardLayoutParam) {
             dashBoardLayoutParam = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
         }
         if (dashBoardLayoutParam.height - positionY < keyBoardHeight || dashBoardLayoutParam.height < keyBoardHeight) {
             dashBoardLayoutParam.height = keyBoardHeight;
-        } else if (dashBoardLayoutParam.height - positionY >= screen_height - 200 || dashBoardLayoutParam.height >= screen_height - 200) {
+
+            dashBoardLayoutParam.topMargin = bottom_entry_menu_board.getHeight();
+            bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
+            entryDashBoardShiftListener.onBottom();
+        } else if (dashBoardLayoutParam.height - positionY > screen_height - 200 || dashBoardLayoutParam.height > screen_height - 200) {
             dashBoardLayoutParam.height = screen_height - 200;
+
+            dashBoardLayoutParam.topMargin = 0;
+            bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
+            entryDashBoardShiftListener.onTop();
         } else {
             dashBoardLayoutParam.height = dashBoardLayoutParam.height - (int) positionY;
+
+            dashBoardLayoutParam.topMargin = keyBoardHeight + bottom_entry_menu_board.getHeight() - dashBoardLayoutParam.height;
+            bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
+            /** 通过接口传递状态 并 将手指的纵坐标通过接口传递 **/
+            entryDashBoardShiftListener.move(dashBoardLayoutParam.height);
         }
-        dashBoardLayoutParam.topMargin = keyBoardHeight + bottom_entry_menu_board.getHeight() - dashBoardLayoutParam.height;
-        bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
+
+
+    }
+
+    //全局变量 面板移动动画
+    private ValueAnimator valueAnimator_up;
+    private ValueAnimator valueAnimator_down;
+
+    // 面板移动动画 参数 float spaceY
+    private void dashBoardAnimate(float spaceY){
+        if (null == dashBoardLayoutParam) {
+            dashBoardLayoutParam = new FrameLayout.LayoutParams(bottom_entry_dashboard.getLayoutParams());
+        }
+        //up
+        if(spaceY < 0){
+            if(spaceY > -50) spaceY = -50 ;
+            if(valueAnimator_up != null){
+                valueAnimator_up.cancel();
+            }
+            valueAnimator_up = null;
+
+            valueAnimator_up = AnimateUtil.createValueAnimator_Y(bottom_entry_dashboard , dashBoardLayoutParam.height , screen_height - 200);
+            valueAnimator_up.setDuration(((screen_height - 200 - dashBoardLayoutParam.height) / (int) - spaceY) * 20);
+            // 动画更新接口
+            valueAnimator_up.addUpdateListener(valueAnimator -> {
+                // 将最新高度 更新至接口信息
+                if(null != entryDashBoardShiftListener){
+                    dashBoardLayoutParam.topMargin =
+                            (int) valueAnimator.getAnimatedValue() - (keyBoardHeight + bottom_entry_menu_board.getHeight()) > 0 ?
+                                0
+                                    :
+                                (int) valueAnimator.getAnimatedValue() - (keyBoardHeight + bottom_entry_menu_board.getHeight())
+                    ;
+                    bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
+
+                    entryDashBoardShiftListener.move((int) valueAnimator.getAnimatedValue());
+                }
+            });
+            valueAnimator_up.addListener(new Animator.AnimatorListener() {
+                @Override
+                public void onAnimationStart(Animator animator) {
+
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animator) {
+                    if(null != entryDashBoardShiftListener){
+                        dashBoardLayoutParam.topMargin = 0;
+                        entryDashBoardShiftListener.onTop();
+                    }
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animator) {
+
+                }
+
+                @Override
+                public void onAnimationRepeat(Animator animator) {
+
+                }
+            });
+            valueAnimator_up.start();
+        }else{
+            //down
+            if(spaceY < 50) spaceY = 50;
+            if(valueAnimator_down != null){
+                valueAnimator_down.cancel();
+            }
+            valueAnimator_down = null;
+
+            valueAnimator_down = AnimateUtil.createValueAnimator_Y(bottom_entry_dashboard , dashBoardLayoutParam.height , keyBoardHeight);
+            valueAnimator_down.setDuration( ((dashBoardLayoutParam.height - keyBoardHeight) / (int) spaceY) * 20 );
+            valueAnimator_down.addUpdateListener(valueAnimator -> {
+                // 将最新高度 更新至接口信息
+                if(null != entryDashBoardShiftListener){
+                    dashBoardLayoutParam.topMargin =
+                            (int) valueAnimator.getAnimatedValue() - (keyBoardHeight + bottom_entry_menu_board.getHeight()) > 0 ?
+                                    0
+                                    :
+                                    (keyBoardHeight + bottom_entry_menu_board.getHeight()) - (int) valueAnimator.getAnimatedValue()
+                    ;
+
+                    bottom_entry_dashboard.setLayoutParams(dashBoardLayoutParam);
+
+
+                    entryDashBoardShiftListener.move((int) valueAnimator.getAnimatedValue());
+                }
+            });
+            valueAnimator_down.addListener(new Animator.AnimatorListener() {
+                @Override
+                public void onAnimationStart(Animator animator) {
+
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animator) {
+                    if(null != entryDashBoardShiftListener){
+                        dashBoardLayoutParam.topMargin = bottom_entry_menu_board.getHeight();
+                        entryDashBoardShiftListener.onBottom();
+                    }
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animator) {
+
+                }
+
+                @Override
+                public void onAnimationRepeat(Animator animator) {
+
+                }
+            });
+            valueAnimator_down.start();
+        }
     }
 
 
-    private void dashBoardShow(View view){
-        bottom_entry_dashboard.setVisibility(VISIBLE);
+    private void setDashBoard(View view){
+        showDashBoard(true);
         dashboard_view_wrap.removeAllViews();
         ViewGroup viewParent = (ViewGroup) view.getParent();
         if(null != viewParent){
@@ -258,8 +438,6 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
         view.setLayoutParams(ll);
     }
     private void setDialogView(View view){
-
-        bottom_entry_dashboard.setVisibility(GONE);
         bottom_entry_dialog_frameLayout.removeAllViews();
         ViewGroup viewParent = (ViewGroup) view.getParent();
         if(null != viewParent){
@@ -268,6 +446,10 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
         bottom_entry_dialog_frameLayout.addView(view);
     }
 
+    private void showDashBoard(boolean is_show){
+        bottom_entry_dashboard.setVisibility(is_show ? VISIBLE : GONE);
+        switchKeyBoardMode(!is_show);
+    }
 
     protected boolean spread = true;
     protected void toggleSpread(){
@@ -284,9 +466,9 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
 
     protected AlphaAnimation alphaAnimation;
     protected static final long duration = 400L;
-    Runnable contractMenuRunnable = this::contract;
-    Runnable spreadMenuRunnable = this::spread;
-    protected void contract(){
+    Runnable contractMenuRunnable = this::contractMenuLayout;
+    Runnable spreadMenuRunnable = this::spreadMenuLayout;
+    protected void contractMenuLayout(){
         bottom_entry_menu_switch.switchState(!spread);
         if(null == bottom_entry_menus_layout){
             return;
@@ -297,13 +479,14 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
         alphaAnimation = new AlphaAnimation(1f, 0.0f);
         alphaAnimation.setDuration(duration);
         alphaAnimation.setFillAfter(true);
+        bottom_entry_menus_layout.startAnimation(alphaAnimation);
         //收缩
         ValueAnimator valueAnimator = createValueAnimator(bottom_entry_menus_layout , menus_layout_width , 0);
         valueAnimator.setDuration(duration);
         valueAnimator.start();
         spread = false;
     }
-    protected void spread(){
+    protected void spreadMenuLayout(){
         bottom_entry_menu_switch.switchState(!spread);
         if(null == bottom_entry_menus_layout){
             return;
@@ -314,6 +497,7 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
         alphaAnimation = new AlphaAnimation(0.0f, 1f);
         alphaAnimation.setDuration(duration);
         alphaAnimation.setFillAfter(true);
+        bottom_entry_menus_layout.startAnimation(alphaAnimation);
         //收缩
         ValueAnimator valueAnimator = createValueAnimator(bottom_entry_menus_layout , 0 , menus_layout_width);
         valueAnimator.setDuration(duration);
@@ -343,6 +527,7 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
 
 
 
+    /** 子类需要重写的方法 **/
     public abstract void setAttribute(AttributeSet attributeSet);
 
     public abstract List<EntryMenu> getEntryMenus();
@@ -368,6 +553,9 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
 
     @Override
     public void onEntryMenuClick(EntryMenu entryMenu) {
+        //任何按钮 点击时 editText 失去焦点
+        bottom_entry_edit.clearFocus();
+
         if(bottom_entry_menu_switch == entryMenu){
             //切换
             toggleSpread();
@@ -379,15 +567,28 @@ public abstract class BottomEntryBase extends LinearLayout implements EntryDialo
 
                 setDialogView(entryMenu.getDialogView());
             }else if(null != entryMenu.getBottomSheetView()){
-                if(null != entryMenu.getEntryDashBoardPullListener()){
+                if(null != entryMenu.getEntryDashBoardShiftListener()){
                     sheet_photo_pull_bar.setVisibility(VISIBLE);
-                    this.entryDashBoardPullListener = entryMenu.getEntryDashBoardPullListener();
+                    this.entryDashBoardShiftListener = entryMenu.getEntryDashBoardShiftListener();
                 }else{
                     sheet_photo_pull_bar.setVisibility(GONE);
                 }
+                // setDashBoard 方法中 调用 是否显示面板 以及设置键盘模式的方法
+                setDashBoard(entryMenu.getBottomSheetView());
+            }else{
+                showDashBoard(false);
 
-                dashBoardShow(entryMenu.getBottomSheetView());
             }
         }
+    }
+
+    private void closeKeyBoard(View v){
+        /*关闭小键盘*/
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        Objects.requireNonNull(imm).hideSoftInputFromWindow(v.getWindowToken(), 0);
+    }
+
+    private void switchKeyBoardMode(boolean resize){
+        findActivity(context).getWindow().setSoftInputMode(resize ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
     }
 }

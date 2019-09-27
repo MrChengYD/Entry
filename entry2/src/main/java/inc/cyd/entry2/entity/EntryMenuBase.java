@@ -10,7 +10,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import inc.cyd.entry2.R;
-import inc.cyd.entry2.interfaces.EntryDashBoardPullListener;
+import inc.cyd.entry2.interfaces.EntryDashBoardShiftListener;
 import inc.cyd.entry2.interfaces.EntryDialogListener;
 import inc.cyd.entry2.interfaces.EntryMenuClickListener;
 import inc.cyd.entry2.interfaces.EntryMenuTouchListener;
@@ -34,7 +34,7 @@ public abstract class EntryMenuBase extends LinearLayout{
     //dialog接口
     private EntryDialogListener entryDialogListener = null;
     //面板移动接口
-    private EntryDashBoardPullListener entryDashBoardPullListener = null;
+    private EntryDashBoardShiftListener entryDashBoardPullListener = null;
 
     public EntryMenuBase(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -53,7 +53,9 @@ public abstract class EntryMenuBase extends LinearLayout{
         menuImageView = menuView.findViewById(R.id.entry_menu);
         clickAbleView = menuView.findViewById(R.id.clickAbleView);
     }
+    /** 指定 图标 **/
     public abstract void customMenuResource(int turnOn_Resource , int turnOff_Resource);
+    /**  指定按钮对应的两个view **/
     public abstract void customMenuFunView(View dialogView , View bottomSheetView);
 
 
@@ -72,11 +74,11 @@ public abstract class EntryMenuBase extends LinearLayout{
     public void setEntryDialogListener(EntryDialogListener entryDialogListener){
         this.entryDialogListener = entryDialogListener;
     }
-    public void setEntryDashBoardPullListener(EntryDashBoardPullListener entryDashBoardPullListener) {
+    public void setEntryDashBoardShiftListener(EntryDashBoardShiftListener entryDashBoardPullListener) {
         this.entryDashBoardPullListener = entryDashBoardPullListener;
     }
 
-    public EntryDashBoardPullListener getEntryDashBoardPullListener() {
+    public EntryDashBoardShiftListener getEntryDashBoardShiftListener() {
         return entryDashBoardPullListener;
     }
 
@@ -93,11 +95,11 @@ public abstract class EntryMenuBase extends LinearLayout{
 
     @SuppressLint("ClickableViewAccessibility")
     private void setMenuTouchEvent(){
-        if(null != entryMenuTouchListener){
-            clickAbleView.setOnTouchListener(((view, motionEvent) -> {
-                clickAbleView.getParent().requestDisallowInterceptTouchEvent(true);
-                switch (motionEvent.getAction()) {
 
+        clickAbleView.setOnTouchListener(((view, motionEvent) -> {
+            clickAbleView.getParent().requestDisallowInterceptTouchEvent(true);
+            if(null != entryMenuTouchListener) {
+                switch (motionEvent.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
                         entryMenuTouchListener.start();
                         break;
@@ -110,14 +112,18 @@ public abstract class EntryMenuBase extends LinearLayout{
                         if (!clickAbleView.isClickable()) {
                             break;
                         }
-                        entryMenuTouchListener.move(motionEvent.getX() , motionEvent.getY());
+                        entryMenuTouchListener.move(motionEvent.getX(), motionEvent.getY());
                         break;
                     }
                 }
+            }
+            return false;
+        }));
 
-                return false;
-            }));
-        }
+
+
+
+
     }
     protected abstract void setMenuClickEvent();
     //获取可以设置监听的view

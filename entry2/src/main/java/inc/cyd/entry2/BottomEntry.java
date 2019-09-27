@@ -3,13 +3,10 @@ package inc.cyd.entry2;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -19,7 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 import inc.cyd.entry2.entity.EntryMenu;
-import inc.cyd.entry2.interfaces.EntryDashBoardPullListener;
+import inc.cyd.entry2.interfaces.EntryDashBoardShiftListener;
 import inc.cyd.entry2.interfaces.EntryMenuTouchListener;
 
 public class BottomEntry extends BottomEntryBase {
@@ -63,11 +60,10 @@ public class BottomEntry extends BottomEntryBase {
                 retEntryMenus.addAll(customMenus);
             }
         }
-
-
         return retEntryMenus;
     }
 
+    private final int sheet_photo_maxHeight = 200;
     /**
      * 禁止被重写
      **/
@@ -87,6 +83,9 @@ public class BottomEntry extends BottomEntryBase {
 
             myMenus.add(takePhotoMenu);
         }
+
+
+
         if (pickImage) {
             EntryMenu picImageMenu = new EntryMenu(context, null);
             View picImageBottomSheetView = LayoutInflater.from(context).inflate(R.layout.sheet_photo, null);
@@ -95,15 +94,15 @@ public class BottomEntry extends BottomEntryBase {
             if (null == sheet_photo_title_layoutParam) {
                 sheet_photo_title_layoutParam = new LinearLayout.LayoutParams(picImageBottomSheetView.findViewById(R.id.sheet_photo_title_layout).getLayoutParams());
             }
-            picImageMenu.setEntryDashBoardPullListener(new EntryDashBoardPullListener() {
+            picImageMenu.setEntryDashBoardShiftListener(new EntryDashBoardShiftListener() {
                 @Override
                 public void start() {
 
                 }
 
                 @Override
-                public void move(float positionY) {
-                    sheetPhotoTitleMove(picImageBottomSheetView , (int) positionY);
+                public void move(float dashBoardHeight) {
+                    sheetPhotoTitleMove(picImageBottomSheetView , (int) dashBoardHeight);
                 }
 
                 @Override
@@ -111,14 +110,10 @@ public class BottomEntry extends BottomEntryBase {
                     sheet_photo_title_layoutParam.height = 0;
                 }
 
-                @Override
-                public void onMiddle() {
-                    sheet_photo_title_layoutParam.height = 140;
-                }
 
                 @Override
                 public void onTop() {
-                    sheet_photo_title_layoutParam.height = 140;
+                    sheet_photo_title_layoutParam.height = sheet_photo_maxHeight;
                 }
             });
 
@@ -165,19 +160,24 @@ public class BottomEntry extends BottomEntryBase {
 
 
 
-    protected void sheetPhotoTitleMove (View sheet_view ,  int position_y){
-
+    protected void sheetPhotoTitleMove (View sheet_view ,  int dashBoardHeight){
         // 变动 title的布局
         sheet_photo_title_layout = sheet_view.findViewById(R.id.sheet_photo_title_layout);
         if (null == sheet_photo_title_layoutParam) {
             sheet_photo_title_layoutParam = new LinearLayout.LayoutParams(sheet_photo_title_layout.getLayoutParams());
         }
-        if (sheet_photo_title_layoutParam.height - position_y / 7 < 0 || sheet_photo_title_layoutParam.height < 0) {
+
+
+
+
+
+
+        if (sheet_photo_title_layoutParam.height < 0 || (dashBoardHeight - keyBoardHeight ) / 7 < 0) {
             sheet_photo_title_layoutParam.height = 0;
-        } else if (sheet_photo_title_layoutParam.height - position_y / 7 > 140 || sheet_photo_title_layoutParam.height > 140) {
-            sheet_photo_title_layoutParam.height = 140;
+        } else if (sheet_photo_title_layoutParam.height > sheet_photo_maxHeight || (dashBoardHeight - keyBoardHeight ) / 7 > sheet_photo_maxHeight) {
+            sheet_photo_title_layoutParam.height = sheet_photo_maxHeight;
         } else {
-            sheet_photo_title_layoutParam.height = sheet_photo_title_layoutParam.height - position_y / 7;
+            sheet_photo_title_layoutParam.height = (dashBoardHeight - keyBoardHeight ) / 7;
         }
         sheet_photo_title_layout.setLayoutParams(sheet_photo_title_layoutParam);
 

@@ -3,23 +3,24 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center_horizontal"
-    android:clickable="true"
-    android:focusable="true"
+    android:clipChildren="false"
     android:orientation="vertical"
-    android:background="@color/google_assistant_background">
+    android:background="@color/main_background">
     <LinearLayout
         android:id="@+id/sheet_photo_pull_bar"
         android:layout_width="match_parent"
-        android:layout_height="20dp"
+        android:layout_height="16dp"
         android:paddingStart="80dp"
         android:paddingEnd="80dp"
         android:layout_gravity="center_horizontal"
+        android:background="@color/google_assistant_background"
         android:gravity="center"
         android:clickable="true"
-        android:focusable="true">
+        android:focusable="true"
+        android:visibility="gone">
         <View
-            android:layout_width="50dp"
-            android:layout_height="4dp"
+            android:layout_width="80dp"
+            android:layout_height="6dp"
             android:background="@drawable/shape_corner_sheet_photo_pull"/>
     </LinearLayout>
 
@@ -27,8 +28,7 @@
         android:id="@+id/dashboard_view_wrap"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:visibility="gone">
+        android:orientation="vertical">
 
     </LinearLayout>
 

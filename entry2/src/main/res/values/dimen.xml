@@ -4,13 +4,13 @@
     <dimen name="entry_menu_margin_start">3dp</dimen>
     <dimen name="entry_menu_dialog_padding">10dp</dimen>
     <dimen name="entry_menu_dialog_height">300dp</dimen>
-
+    <dimen name="entry_menu_dialog_marginTop">-300dp</dimen>
     <dimen name="entry_layout_padding">3dp</dimen>
 
 
     <dimen name="sheet_photo_title_height">40dp</dimen>
-    <dimen name="sheet_photo_main_title_textSize">12sp</dimen>
-    <dimen name="sheet_photo_side_title_textSize">10sp</dimen>
+    <dimen name="sheet_photo_main_title_textSize">15sp</dimen>
+    <dimen name="sheet_photo_side_title_textSize">12sp</dimen>
 
     <dimen name="tab_padding_top">3dp</dimen>
     <dimen name="tab_padding_bottom">3dp</dimen>
