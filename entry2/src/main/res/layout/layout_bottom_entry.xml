@@ -5,17 +5,14 @@
     android:layout_height="wrap_content"
     android:layout_gravity="bottom"
     android:clipChildren="false"
-    android:clickable="true"
-    android:focusable="true"
-    android:background="@color/google_yellow"
     android:orientation="vertical">
     <FrameLayout
         android:id="@+id/bottom_entry_dialog_frameLayout"
         android:layout_width="match_parent"
         android:layout_height="@dimen/entry_menu_dialog_height"
-        android:layout_marginTop="-300dp"
-        android:clipChildren="false"
-        android:visibility="gone">
+        android:layout_marginTop="@dimen/entry_menu_dialog_marginTop"
+        android:background="@color/google_green"
+        android:clipChildren="false">
     </FrameLayout>
     <LinearLayout
         android:id="@+id/bottom_entry_menu_board"
@@ -121,10 +118,9 @@
         android:id="@+id/bottom_entry_dashboard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:clipChildren="false"
         layout="@layout/sheet_bottom_entry_dashboard"
-        android:layout_marginTop="40dp"/>
-    <!-- 在java代码中设置 marginTop -->
-
-
+        android:layout_marginTop="40dp"
+        android:visibility="gone"/>
 
 </FrameLayout>
